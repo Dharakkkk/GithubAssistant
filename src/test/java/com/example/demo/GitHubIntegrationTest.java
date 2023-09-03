@@ -3,6 +3,7 @@ package com.example.demo;
 import com.example.demo.models.BranchDetails;
 import com.example.demo.models.RepoDetails;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -20,7 +21,7 @@ public class GitHubIntegrationTest {
     @LocalServerPort
     private int port;
 
-    private RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate();
     private String baseUrl;
 
     @BeforeEach
@@ -28,11 +29,18 @@ public class GitHubIntegrationTest {
         baseUrl = "http://localhost:" + port;
     }
 
-    @Test
-    public void testListRepositories_ValidUser_JsonAcceptHeader() {
+    private HttpHeaders createHeadersWithAccept(String mediaType) {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", "application/json");
+        headers.set("Accept", mediaType);
+        return headers;
+    }
+
+    @Test
+    @DisplayName("Should return valid repo details when given a valid user with JSON accept header")
+    public void shouldReturnValidRepoDetailsWhenGivenValidUserJsonAcceptHeader() {
+        HttpHeaders headers = createHeadersWithAccept("application/json");
         HttpEntity<String> entity = new HttpEntity<>(headers);
+
 
         ResponseEntity<RepoDetails[]> response = restTemplate.exchange(
                 baseUrl + "/repositories/validUsername",
@@ -41,7 +49,7 @@ public class GitHubIntegrationTest {
                 RepoDetails[].class
         );
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
         assertNotNull(response.getBody());
 
         for (RepoDetails repo : response.getBody()) {
@@ -56,13 +64,13 @@ public class GitHubIntegrationTest {
     }
 
     @Test
-    public void testListRepositories_InvalidUser() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", "application/json");
+    @DisplayName("Should return user not found error when given an invalid user")
+    public void shouldReturnUserNotFoundErrorWhenGivenInvalidUser() {
+        HttpHeaders headers = createHeadersWithAccept("application/json");
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         try {
-            ResponseEntity<ApiResponse> response = restTemplate.exchange(
+            restTemplate.exchange(
                     baseUrl + "/repositories/invalidUsername12311354124313",
                     HttpMethod.GET,
                     entity,
@@ -71,19 +79,19 @@ public class GitHubIntegrationTest {
 
             fail("Expected HttpClientErrorException.NotFound to be thrown");
         } catch (HttpClientErrorException.NotFound e) {
-            assertEquals(404, e.getRawStatusCode());
+            assertEquals(HttpStatus.NOT_FOUND.value(), e.getStatusCode().value());
             assertTrue(e.getResponseBodyAsString().contains("User not found"));
         }
     }
 
     @Test
-    public void testListRepositories_XmlAcceptHeader() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", "application/xml");
+    @DisplayName("Should return unsupported data type error when XML accept header is used")
+    public void shouldReturnUnsupportedDataTypeErrorWhenXmlAcceptHeaderIsUsed() {
+        HttpHeaders headers = createHeadersWithAccept("application/xml");
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         try {
-            ResponseEntity<String> response = restTemplate.exchange(
+            restTemplate.exchange(
                     baseUrl + "/repositories/validUsername",
                     HttpMethod.GET,
                     entity,
@@ -92,7 +100,7 @@ public class GitHubIntegrationTest {
 
             fail("Expected HttpClientErrorException to be thrown");
         } catch (HttpClientErrorException.NotAcceptable e) {
-            assertEquals(406, e.getRawStatusCode());
+            assertEquals(HttpStatus.NOT_ACCEPTABLE.value(), e.getStatusCode().value());
             assertTrue(e.getResponseBodyAsString().contains("Unsupported data type"));
         }
     }
