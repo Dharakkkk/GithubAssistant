@@ -18,7 +18,8 @@ public class HeaderInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         String acceptHeader = request.getHeader("Accept");
         if ("application/xml".equals(acceptHeader)) {
             response.setStatus(HttpStatus.NOT_ACCEPTABLE.value());
