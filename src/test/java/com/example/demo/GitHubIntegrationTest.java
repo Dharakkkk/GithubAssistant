@@ -9,6 +9,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 
 import com.example.demo.dto.ApiResponse;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -60,17 +61,19 @@ public class GitHubIntegrationTest {
         headers.set("Accept", "application/json");
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<ApiResponse> response = restTemplate.exchange(
-                baseUrl + "/repositories/invalidUsername",
-                HttpMethod.GET,
-                entity,
-                ApiResponse.class
-        );
+        try {
+            ResponseEntity<ApiResponse> response = restTemplate.exchange(
+                    baseUrl + "/repositories/invalidUsername12311354124313",
+                    HttpMethod.GET,
+                    entity,
+                    ApiResponse.class
+            );
 
-        assertEquals(404, response.getStatusCodeValue());
-        assertNotNull(response.getBody());
-        assertEquals(404, response.getBody().getStatus());
-        assertTrue(response.getBody().getMessage().contains("not found"));
+            fail("Expected HttpClientErrorException.NotFound to be thrown");
+        } catch (HttpClientErrorException.NotFound e) {
+            assertEquals(404, e.getRawStatusCode());
+            assertTrue(e.getResponseBodyAsString().contains("User not found"));
+        }
     }
 
     @Test
@@ -79,17 +82,19 @@ public class GitHubIntegrationTest {
         headers.set("Accept", "application/xml");
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<ApiResponse> response = restTemplate.exchange(
-                baseUrl + "/repositories/validUsername",
-                HttpMethod.GET,
-                entity,
-                ApiResponse.class
-        );
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    baseUrl + "/repositories/validUsername",
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
 
-        assertEquals(406, response.getStatusCodeValue());
-        assertNotNull(response.getBody());
-        assertEquals(406, response.getBody().getStatus());
-        assertTrue(response.getBody().getMessage().contains("Unsupported data type"));
+            fail("Expected HttpClientErrorException to be thrown");
+        } catch (HttpClientErrorException.NotAcceptable e) {
+            assertEquals(406, e.getRawStatusCode());
+            assertTrue(e.getResponseBodyAsString().contains("Unsupported data type"));
+        }
     }
 
 }
