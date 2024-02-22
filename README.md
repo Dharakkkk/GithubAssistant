@@ -25,7 +25,7 @@ Additionally, it handles specific error scenarios such as a non-existent GitHub 
 
 ### Prerequisites
 
-- Java 17
+- Java 21
 - Spring Boot 3
 - Maven (for building and running)
 
@@ -64,7 +64,7 @@ Replace `{username}` with the desired GitHub username.
 
 ### Interceptors
 
-- `HeaderInterceptor`: Intercepts incoming requests to validate the `Accept` header.
+- `HeaderFilter`: Intercepts incoming requests to validate the `Accept` header.
 
 ### Models
 
@@ -78,7 +78,7 @@ Replace `{username}` with the desired GitHub username.
 ### Exceptions
 
 - `UserNotFoundException`: Thrown when a specified GitHub user is not found.
-- `RepositoriesFetchFailedException`: Thrown when there's a failure in fetching repositories.
+- `ResponseStatusException`: Thrown when there's a failure in fetching repositories.
 
 ## **Error Handling**
 
