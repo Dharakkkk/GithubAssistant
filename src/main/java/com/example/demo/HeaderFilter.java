@@ -8,10 +8,14 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 @Order(-1) // Ustawienie priorytetu wykonania
 public class HeaderFilter implements WebFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(HeaderFilter.class);
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -20,19 +24,22 @@ public class HeaderFilter implements WebFilter {
 
         String acceptHeader = request.getHeaders().getFirst("Accept");
         String contentType = request.getHeaders().getFirst("Content-Type");
-        boolean isPostOrPut = "POST".equalsIgnoreCase(request.getMethodValue()) || "PUT".equalsIgnoreCase(request.getMethodValue());
+        boolean isPostOrPut = "POST".equalsIgnoreCase(request.getMethodValue()) ||
+                "PUT".equalsIgnoreCase(request.getMethodValue());
 
+        // Logowanie nieprawidłowych nagłówków
         if (!MediaType.APPLICATION_JSON_VALUE.equals(acceptHeader)) {
+            logger.warn("Invalid Accept header: {}", acceptHeader);
             response.setStatusCode(HttpStatus.NOT_ACCEPTABLE);
             return response.setComplete();
         }
 
         if (isPostOrPut && !MediaType.APPLICATION_JSON_VALUE.equals(contentType)) {
+            logger.warn("Invalid Content-Type header for {} request: {}", request.getMethodValue(), contentType);
             response.setStatusCode(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
             return response.setComplete();
         }
 
         return chain.filter(exchange);
     }
-
 }
