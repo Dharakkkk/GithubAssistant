@@ -45,4 +45,5 @@ public class GlobalExceptionHandler {
         logger.error("Internal server error: {}", ex.getMessage());
         return new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An unexpected error occurred. Please try again later.");
     }
+
 }

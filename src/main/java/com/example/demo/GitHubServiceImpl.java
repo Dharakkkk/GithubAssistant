@@ -9,6 +9,7 @@ import com.example.demo.records.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -39,25 +40,29 @@ public class GitHubServiceImpl implements GitHubService {
         return webClient.get()
                 .uri("/users/{username}/repos", username)
                 .retrieve()
-                .onStatus(status -> status.value() == 404,
-                        clientResponse -> {
-                            logger.warn("User not found: {}", username);
-                            return Mono.error(new UserNotFoundException("User not found: " + username));
-                        })
-                .onStatus(HttpStatusCode::is5xxServerError,
-                        clientResponse -> {
-                            logger.error("Server error occurred for user: {}", username);
-                            return Mono.error(new ServerErrorException("Server error occurred while fetching repositories for user: " + username));
-                        })
+                .onStatus(HttpStatusCode::isError, clientResponse -> {
+                    if (clientResponse.statusCode() == HttpStatus.NOT_FOUND) {
+                        logger.warn("User not found: {}", username);
+                        return Mono.error(new UserNotFoundException("User not found: " + username));
+                    }
+                    if (clientResponse.statusCode().is5xxServerError()) {
+                        logger.error("Server error occurred for user: {}", username);
+                        return Mono.error(new ServerErrorException("Server error occurred while fetching repositories for user: " + username));
+                    }
+                    return Mono.error(new RuntimeException("Unexpected error occurred"));
+                })
                 .bodyToFlux(Repository.class)
                 .filter(repo -> !repo.fork())
                 .flatMap(this::convertToRepoDetails)
                 .limitRate(10)
                 .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                        .filter(throwable -> !(throwable instanceof UserNotFoundException))
                         .doAfterRetry(signal -> logger.warn("Retrying... Attempt: {}", signal.totalRetriesInARow())))
                 .doOnError(e -> logger.error("Error fetching repositories for user: {}", username, e))
                 .doOnComplete(() -> logger.info("Finished fetching repositories for user: {}", username));
     }
+
+
 
     Mono<RepoDetails> convertToRepoDetails(Repository repo) {
         if (repo == null || repo.name() == null || repo.owner() == null) {

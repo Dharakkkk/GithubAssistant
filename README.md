@@ -27,21 +27,9 @@ Additionally, it handles specific error scenarios such as a non-existent GitHub 
 
 - Java 21
 - Spring Boot 3
-- Maven (for building and running)
+- Gradle (for building and running)
 
-### Building
 
-To build the project, navigate to the project directory and execute:
-
-```bash
-mvn clean install
-```
-
-### Running
-To run the project after building, execute:
-```bash
-mvn spring-boot:run
-```
 
 ### Usage 
 To fetch repositories for a specific GitHub user:

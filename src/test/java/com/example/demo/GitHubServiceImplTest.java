@@ -102,10 +102,11 @@ class GitHubServiceImplTest {
 
         // Weryfikacja, że wyjątek zostanie rzucony
         StepVerifier.create(repoDetailsFlux)
-                .expectErrorMatches(throwable -> throwable.getCause() instanceof UserNotFoundException &&
-                        throwable.getCause().getMessage().equals("User not found: user1"))
+                .expectErrorMatches(throwable -> throwable instanceof UserNotFoundException &&
+                        throwable.getMessage().equals("User not found: user1"))
                 .verify();
     }
+
 
     @Test
     @DisplayName("Should throw ServerErrorException when a server error occurs")
